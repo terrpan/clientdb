@@ -47,6 +47,11 @@ func main() {
 	r.HandleFunc("/api/services", controllers.AddService).Methods("POST")
 	r.HandleFunc("/api/services/{id}", controllers.UpdateService).Methods("PUT")
 	r.HandleFunc("/api/services/{id}", controllers.DeleteService).Methods("DELETE")
+	r.HandleFunc("/api/contacts", controllers.GetContacts).Methods("GET")
+	r.HandleFunc("/api/contacts/{id}", controllers.GetContactById).Methods("GET")
+	r.HandleFunc("/api/contacts", controllers.AddContact).Methods("POST")
+	r.HandleFunc("/api/contacts/{id}", controllers.UpdateContact).Methods("PUT")
+	r.HandleFunc("/api/contacts/{id}", controllers.DeleteContact).Methods("DELETE")
 	r.Handle("/", r)
 
 	// setup the cors
