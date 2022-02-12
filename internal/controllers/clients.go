@@ -17,24 +17,14 @@ import (
 )
 
 type ClientBase struct {
-	ID         primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ClientName string             `json:"client_name" bson:"client_name" validate:"required"`
-	// ClientContacts []Contacts         `json:"client_contacts" bson:"client_contacts" validate:"required"`
-	ClientContacts []Contacts    `json:"client_contacts" bson:"client_contacts"`
-	SlackChannel   string        `json:"slack_channel" bson:"slack_channel"`
-	WebUrl         string        `json:"web_url" bson:"web_url"`
-	MangedServices []ServiceBase `json:"managed_services" bson:"managed_services"` // import ServiceBase from services.go
-	CreatedOn      time.Time     `json:"created_on" bson:"created_on"`
-	ModifiedOn     time.Time     `json:"modified_on" bson:"modified_on"`
-}
-
-//TODO: Move to a separate collection and endpoint
-type Contacts struct {
-	FirstName string `json:"first_name" bson:"first_name" validate:"required"`
-	LastName  string `json:"last_name" bson:"last_name" validate:"required"`
-	FullName  string `json:"full_name" bson:"full_name" `
-	Email     string `json:"email" bson:"email" validate:"required,email"`
-	Phone     string `json:"phone" bson:"phone"`
+	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ClientName     string             `json:"client_name" bson:"client_name" validate:"required"`
+	ClientContacts []ContactsBase     `json:"client_contacts" bson:"client_contacts"` // import ContactsBase from contacts.go
+	SlackChannel   string             `json:"slack_channel,omitempty" bson:"slack_channel,omitempty"`
+	WebUrl         string             `json:"web_url,omitempty" bson:"web_url,omitempty"`
+	MangedServices []ServiceBase      `json:"managed_services" bson:"managed_services"` // import ServiceBase from services.go
+	CreatedOn      time.Time          `json:"created_on,omitempty" bson:"created_on,omitempty"`
+	ModifiedOn     time.Time          `json:"modified_on,omitempty" bson:"modified_on,omitempty"`
 }
 
 var (
@@ -45,23 +35,6 @@ var (
 // getClient returns all clients
 func GetClients(w http.ResponseWriter, r *http.Request) {
 	clients := []ClientBase{}
-	// Find all clients in the collection
-	// cursor, err := clientsCollection.Find(context.TODO(), bson.M{})
-	// if err != nil {
-	// 	response := "Failed to find clients: "
-	// 	log.Error(response + err.Error())
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	json.NewEncoder(w).Encode(response)
-	// 	return
-	// }
-
-	// iterate through the cursor and add each client to the clients array
-	// for cursor.Next(context.TODO()) {
-	// 	var client ClientBase
-	// 	// decode the document into the client struct
-	// 	cursor.Decode(&client)
-	// 	clients = append(clients, client)
-	// }
 
 	// join manged_services from services collection using mongoDB's $lookup
 	// https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/
@@ -73,6 +46,14 @@ func GetClients(w http.ResponseWriter, r *http.Request) {
 				"localField":   "_id",
 				"foreignField": "attached_to_client.client_id",
 				"as":           "managed_services",
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "contacts",
+				"localField":   "_id",
+				"foreignField": "attached_to_client.client_id",
+				"as":           "client_contacts",
 			},
 		},
 	}
@@ -121,12 +102,20 @@ func GetClientbyId(w http.ResponseWriter, r *http.Request) {
 				"as":           "managed_services",
 			},
 		},
+		{
+			"$lookup": bson.M{
+				"from":         "contacts",
+				"localField":   "_id",
+				"foreignField": "attached_to_client.client_id",
+				"as":           "client_contacts",
+			},
+		},
 	}
 
 	// execute the pipeline
 	cursor, err := clientsCollection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
-		response := "Bad request "
+		response := "Bad request"
 		log.Error(response, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response)
@@ -152,19 +141,6 @@ func GetClientbyId(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(client)
 
-	// Find the client in the collection based on the id
-	// err := clientsCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&client)
-	// if err != nil {
-	// 	response := "No client not found with id: " + id.Hex()
-	// 	log.Error(response, err.Error())
-	// 	w.WriteHeader(http.StatusNotFound)
-	// 	json.NewEncoder(w).Encode(response)
-	// 	return
-	// }
-
-	// w.WriteHeader(http.StatusOK)
-	// json.NewEncoder(w).Encode(client)
-
 }
 
 // updateClient updates a client
@@ -181,6 +157,15 @@ func UpdateClient(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
 		response := "Invalid request payload"
 		log.Error(response, err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// validate the body to ensure all required fields are present
+	if validationErr := validate.Struct(client); validationErr != nil {
+		response := "Body missing required fields: " + validationErr.Error()
+		log.Error(response)
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(response)
 		return
@@ -317,10 +302,6 @@ func AddClient(w http.ResponseWriter, r *http.Request) {
 	client.CreatedOn = time.Now()
 	client.ModifiedOn = time.Now()
 
-	// Iterate through the contacts and merge the first and last name into full name
-	for i := 0; i < len(client.ClientContacts); i++ {
-		client.ClientContacts[i].FullName = client.ClientContacts[i].FirstName + " " + client.ClientContacts[i].LastName
-	}
 	// Insert the new client to collection
 	result, err := clientsCollection.InsertOne(context.TODO(), client)
 	if err != nil {
