@@ -179,9 +179,8 @@ func UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// verify that id exists in the collection
+	// verify that the id exists in the collection
 	count, err := servicesCollection.CountDocuments(context.TODO(), bson.M{"_id": id})
-
 	if err != nil {
 		response := "Failed to check if service id exists"
 		log.Error(response, err)
