@@ -246,3 +246,77 @@ func DeleteContact(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 
 }
+
+// func AddContactToClient adds the contact ConractBase.AttachedtoClient
+func AddContactToClient(w http.ResponseWriter, r *http.Request) {
+	var contact ContactsBase
+
+	// get the id of the client
+	id, _ := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+
+	// find the contact in the collection to verify it exists
+	err := contactsCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&contact)
+	if err != nil {
+		response := "Failed to find the contact: " + id.Hex()
+		log.Error(response, err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// get the client_name and client_id from the request body
+	var client Clients
+	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
+		response := "Invalid request payload: " + err.Error()
+		log.Error(response)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// retrieve the client from the clients collection based on the client_id
+	err = clientsCollection.FindOne(context.TODO(), bson.M{"_id": client.ClientID}).Decode(&client)
+	if err != nil {
+		response := "Failed to find client: " + client.ClientID.Hex()
+		log.Error(response + err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// append the client to contact
+	contact.AttachedToClient = append(contact.AttachedToClient, client)
+
+	// bump the modified on field
+	contact.ModifiedOn = time.Now()
+
+	// update the contact in the collection
+	result, err := contactsCollection.UpdateOne(context.TODO(), bson.M{"_id": id}, bson.M{"$set": contact})
+	if err != nil {
+		response := "Failed to update contact: "
+		log.Error(response + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	log.Info("Updated contact with attached client: ", id.Hex())
+
+	// retrive the updated contact from collection
+	var updatedContact ContactsBase
+	if result.MatchedCount == 1 {
+		err := contactsCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&updatedContact)
+		if err != nil {
+			response := "Failed to retrieve updated contact"
+			log.Error(response, err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updatedContact)
+
+}

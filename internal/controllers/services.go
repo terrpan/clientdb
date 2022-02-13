@@ -35,7 +35,7 @@ type ServiceBase struct {
 }
 
 type Clients struct {
-	ClientID   primitive.ObjectID `json:"client_id" bson:"client_id"`
+	ClientID   primitive.ObjectID `json:"client_id" bson:"_id"`
 	ClientName string             `json:"client_name" bson:"client_name"`
 }
 
@@ -261,4 +261,78 @@ func DeleteService(w http.ResponseWriter, r *http.Request) {
 	log.Info(response)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+// func AddServiceToClient adds the client_name and client_id to ServiceBase.AttachedtoClient
+func AddServiceToClient(w http.ResponseWriter, r *http.Request) {
+	var service ServiceBase
+	// get the id from the url
+	id, _ := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+
+	// find the service in the collection to verify it exists
+	err := servicesCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&service)
+	idString := id.Hex()
+	if err != nil {
+		response := "Failed to find service: " + idString
+		log.Error(response + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// get the client_name and client_id from the request body
+	var client Clients
+	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
+		response := "Invalid request payload: " + err.Error()
+		log.Error(response)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// retrieve the client from the clients collection based on the client_id
+	err = clientsCollection.FindOne(context.TODO(), bson.M{"_id": client.ClientID}).Decode(&client)
+	if err != nil {
+		response := "Failed to find client: " + client.ClientID.Hex()
+		log.Error(response + err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// append the client_name and client_id to the service
+	service.AttachedToClient = append(service.AttachedToClient, client)
+
+	// bump the timestamp
+	service.ModifiedOn = time.Now()
+
+	// update the service in the collection
+	result, err := servicesCollection.UpdateOne(context.TODO(), bson.M{"_id": id}, bson.M{"$set": service})
+
+	if err != nil {
+		response := "Failed to update service: " + idString
+		log.Error(response + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	log.Info("Service updated with attached client. id: ", idString)
+
+	// retreive the updated service
+	var updatedService ServiceBase
+	if result.MatchedCount == 1 {
+		err := servicesCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&updatedService)
+		if err != nil {
+			response := "Failed to retrieve updated service"
+			log.Error(response, err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updatedService)
+
 }

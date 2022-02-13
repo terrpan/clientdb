@@ -44,7 +44,7 @@ func GetClients(w http.ResponseWriter, r *http.Request) {
 			"$lookup": bson.M{
 				"from":         "services",
 				"localField":   "_id",
-				"foreignField": "attached_to_client.client_id",
+				"foreignField": "attached_to_client._id",
 				"as":           "managed_services",
 			},
 		},
@@ -52,7 +52,7 @@ func GetClients(w http.ResponseWriter, r *http.Request) {
 			"$lookup": bson.M{
 				"from":         "contacts",
 				"localField":   "_id",
-				"foreignField": "attached_to_client.client_id",
+				"foreignField": "attached_to_client._id",
 				"as":           "client_contacts",
 			},
 		},
@@ -98,7 +98,7 @@ func GetClientbyId(w http.ResponseWriter, r *http.Request) {
 			"$lookup": bson.M{
 				"from":         "services",
 				"localField":   "_id",
-				"foreignField": "attached_to_client.client_id",
+				"foreignField": "attached_to_client._id",
 				"as":           "managed_services",
 			},
 		},
@@ -106,7 +106,7 @@ func GetClientbyId(w http.ResponseWriter, r *http.Request) {
 			"$lookup": bson.M{
 				"from":         "contacts",
 				"localField":   "_id",
-				"foreignField": "attached_to_client.client_id",
+				"foreignField": "attached_to_client._id",
 				"as":           "client_contacts",
 			},
 		},
@@ -307,7 +307,6 @@ func AddClient(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response := "Failed to insert client"
 		log.Error(response, err.Error())
-		// http.Error(w, err.Error(), http.StatusBadRequest)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response)
 		return
@@ -320,3 +319,4 @@ func AddClient(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result.InsertedID)
 
 }
+
