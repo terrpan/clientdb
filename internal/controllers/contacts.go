@@ -16,7 +16,7 @@ import (
 )
 
 type ContactsBase struct {
-	ID               primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	ID               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	FirstName        string             `json:"first_name" bson:"first_name" validate:"required"`
 	LastName         string             `json:"last_name" bson:"last_name" validate:"required"`
 	FullName         string             `json:"full_name,omitempty" bson:"full_name,omitempty"`
@@ -59,7 +59,7 @@ func GetContacts(w http.ResponseWriter, r *http.Request) {
 		contacts = append(contacts, contact)
 	}
 
-	// Count docuemtns in array and return x-total-count header
+	// Count documents in array and return x-total-count header
 	w.Header().Add("X-Total-Count", (strconv.Itoa(len(contacts))))
 
 	// Return the contacts array

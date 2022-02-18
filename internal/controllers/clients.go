@@ -19,12 +19,41 @@ import (
 type ClientBase struct {
 	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ClientName     string             `json:"client_name" bson:"client_name" validate:"required"`
-	ClientContacts []ContactsBase     `json:"client_contacts" bson:"client_contacts"` // import ContactsBase from contacts.go
 	SlackChannel   string             `json:"slack_channel,omitempty" bson:"slack_channel,omitempty"`
 	WebUrl         string             `json:"web_url,omitempty" bson:"web_url,omitempty"`
-	MangedServices []ServiceBase      `json:"managed_services" bson:"managed_services"` // import ServiceBase from services.go
 	CreatedOn      time.Time          `json:"created_on,omitempty" bson:"created_on,omitempty"`
 	ModifiedOn     time.Time          `json:"modified_on,omitempty" bson:"modified_on,omitempty"`
+}
+
+type ClientResponse struct {
+	ID             primitive.ObjectID               `json:"id" bson:"_id,omitempty"`
+	ClientName     string                           `json:"client_name" bson:"client_name"`
+	SlackChannel   string                           `json:"slack_channel,omitempty" bson:"slack_channel,omitempty"`
+	WebUrl         string                           `json:"web_url,omitempty" bson:"web_url,omitempty"`
+	MangedServices []ClientsManagedServicesResponse `json:"managed_services" bson:"managed_services"`
+	ClientContacts []ClientsContactResponse         `json:"client_contacts" bson:"client_contacts"`
+	CreatedOn      time.Time                        `json:"created_on,omitempty" bson:"created_on,omitempty"`
+	ModifiedOn     time.Time                        `json:"modified_on,omitempty" bson:"modified_on,omitempty"`
+}
+
+type ClientsManagedServicesResponse struct {
+	ID               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ServiceName      string             `json:"service_name" bson:"service_name" validate:"required"`
+	ServiceType      string             `json:"service_type" bson:"service_type" validate:"required"`
+	ServiceStatus    string             `json:"service_status" bson:"service_status" validate:"required"`
+	InvoiceFrequency string             `json:"invoice_frequency" bson:"invoice_frequency"`
+	InvoiceAmount    float64            `json:"invoice_amount" bson:"invoice_amount"`
+	ManagementFee    float64            `json:"management_fee" bson:"management_fee"`
+}
+
+type ClientsContactResponse struct {
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	FirstName   string             `json:"first_name" bson:"first_name" validate:"required"`
+	LastName    string             `json:"last_name" bson:"last_name" validate:"required"`
+	FullName    string             `json:"full_name,omitempty" bson:"full_name,omitempty"`
+	Email       string             `json:"email" bson:"email" validate:"required,email"`
+	PhoneNumber string             `json:"phone_number,omitempty" bson:"phone_number"`
+	Role        string             `json:"role,omitempty" bson:"role"`
 }
 
 var (
@@ -34,9 +63,9 @@ var (
 
 // getClient returns all clients
 func GetClients(w http.ResponseWriter, r *http.Request) {
-	clients := []ClientBase{}
+	clients := []ClientResponse{}
 
-	// join manged_services from services collection using mongoDB's $lookup
+	// join manged_services from services collection using mongoDB's $lookup and $project to get the required fields
 	// https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/
 	// https://docs.mongodb.com/manual/core/aggregation-pipeline/
 	pipeline := []bson.M{
@@ -56,6 +85,29 @@ func GetClients(w http.ResponseWriter, r *http.Request) {
 				"as":           "client_contacts",
 			},
 		},
+		{
+			"$project": bson.M{
+				"_id":                               1,
+				"client_name":                       1,
+				"slack_channel":                     1,
+				"web_url":                           1,
+				"created_on":                        1,
+				"modified_on":                       1,
+				"managed_services._id":              1,
+				"managed_services.service_name":     1,
+				"managed_services.service_type":     1,
+				"managed_services.InvoiceFrequency": 1,
+				"managed_services.InvoiceAmount":    1,
+				"managed_services.ManagementFee":    1,
+				"client_contacts._id":               1,
+				"client_contacts.first_name":        1,
+				"client_contacts.last_name":         1,
+				"client_contacts.full_name":         1,
+				"client_contacts.email":             1,
+				"client_contacts.phone_number":      1,
+				"client_contacts.role":              1,
+			},
+		},
 	}
 
 	// execute the pipeline
@@ -70,7 +122,7 @@ func GetClients(w http.ResponseWriter, r *http.Request) {
 
 	// iterate through the cursor and add each client to the clients array
 	for cursor.Next(context.TODO()) {
-		var client ClientBase
+		var client ClientResponse
 		// decode the document into the client struct
 		cursor.Decode(&client)
 		clients = append(clients, client)
@@ -86,10 +138,10 @@ func GetClients(w http.ResponseWriter, r *http.Request) {
 
 // getClientbyId returns a client by id
 func GetClientbyId(w http.ResponseWriter, r *http.Request) {
-	var client ClientBase
+	var client ClientResponse
 	id, _ := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
 
-	// aggregate the client and its services and match the client id using $match and $lookup
+	// aggregate the client and it's services and contacts using client_id, and use $project to get the required fields
 	pipeline := []bson.M{
 		{
 			"$match": bson.M{"_id": id},
@@ -108,6 +160,29 @@ func GetClientbyId(w http.ResponseWriter, r *http.Request) {
 				"localField":   "_id",
 				"foreignField": "attached_to_client._id",
 				"as":           "client_contacts",
+			},
+		},
+		{
+			"$project": bson.M{
+				"_id":                               1,
+				"client_name":                       1,
+				"slack_channel":                     1,
+				"web_url":                           1,
+				"created_on":                        1,
+				"modified_on":                       1,
+				"managed_services._id":              1,
+				"managed_services.service_name":     1,
+				"managed_services.service_type":     1,
+				"managed_services.InvoiceFrequency": 1,
+				"managed_services.InvoiceAmount":    1,
+				"managed_services.ManagementFee":    1,
+				"client_contacts._id":               1,
+				"client_contacts.first_name":        1,
+				"client_contacts.last_name":         1,
+				"client_contacts.full_name":         1,
+				"client_contacts.email":             1,
+				"client_contacts.phone_number":      1,
+				"client_contacts.role":              1,
 			},
 		},
 	}
@@ -319,4 +394,3 @@ func AddClient(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result.InsertedID)
 
 }
-

@@ -36,7 +36,7 @@ type ServiceBase struct {
 
 type Clients struct {
 	ClientID   primitive.ObjectID `json:"client_id" bson:"_id"`
-	ClientName string             `json:"client_name" bson:"client_name"`
+	// ClientName string             `json:"client_name" bson:"client_name"`
 }
 
 // func GetServices returns all registered services from db
