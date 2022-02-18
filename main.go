@@ -2,7 +2,9 @@ package main
 
 import (
 	"net/http"
+	"os"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
@@ -30,13 +32,21 @@ func commonMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func logger(next http.Handler) http.Handler {
+	//TODO: change to debug level
+	if os.Getenv("ENV") == "dev" {
+		return handlers.CombinedLoggingHandler(os.Stdout, next)
+	}
+	return next
+}
+
 func main() {
 
 	dbclient.DbConnect()
 
 	r := mux.NewRouter()
 
-	r.Use(commonMiddleware)
+	r.Use(commonMiddleware, logger)
 	r.HandleFunc("/", homeHandler)
 	r.HandleFunc("/api/clients", controllers.GetClients).Methods("GET")
 	r.HandleFunc("/api/clients/{id}", controllers.GetClientbyId).Methods("GET")
@@ -48,19 +58,17 @@ func main() {
 	r.HandleFunc("/api/services", controllers.AddService).Methods("POST")
 	r.HandleFunc("/api/services/{id}", controllers.UpdateService).Methods("PUT")
 	r.HandleFunc("/api/services/{id}", controllers.DeleteService).Methods("DELETE")
-	r.HandleFunc("/api/services/{id}", controllers.AddServiceToClient).Methods("POST")
 	r.HandleFunc("/api/contacts", controllers.GetContacts).Methods("GET")
 	r.HandleFunc("/api/contacts/{id}", controllers.GetContactById).Methods("GET")
 	r.HandleFunc("/api/contacts", controllers.AddContact).Methods("POST")
 	r.HandleFunc("/api/contacts/{id}", controllers.UpdateContact).Methods("PUT")
 	r.HandleFunc("/api/contacts/{id}", controllers.DeleteContact).Methods("DELETE")
-	r.HandleFunc("/api/contacts/{id}", controllers.AddContactToClient).Methods("POST")
 	r.Handle("/", r)
 
 	// setup the cors
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "FETCH"},
 		ExposedHeaders:   []string{"Content-Type", "Accept", "X-Total-Count"},
 		AllowCredentials: true,
 	})
