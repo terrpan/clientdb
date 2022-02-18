@@ -34,62 +34,156 @@ type ServiceBase struct {
 	ModifiedOn         time.Time          `json:"modified_on" bson:"modified_on,omitempty"`
 }
 
+type ServiceResponse struct {
+	ID                 primitive.ObjectID      `json:"id" bson:"_id,omitempty"`
+	ServiceName        string                  `json:"service_name" bson:"service_name"`
+	ServiceType        string                  `json:"service_type" bson:"service_type"`
+	ServiceOwner       string                  `json:"service_owner" bson:"service_owner"`
+	ServiceDescription string                  `json:"service_description" bson:"service_description"`
+	ServiceStatus      string                  `json:"service_status" bson:"service_status"`
+	Client             []ServiceClientResponse `json:"client" bson:"client"`
+	InvoiceFrequency   string                  `json:"invoice_frequency" bson:"invoice_frequency"`
+	InvoiceAmount      float64                 `json:"invoice_amount" bson:"invoice_amount"`
+	ManagementFee      float64                 `json:"management_fee" bson:"management_fee"`
+	CreatedOn          time.Time               `json:"created_on" bson:"created_on,omitempty"`
+	ModifiedOn         time.Time               `json:"modified_on" bson:"modified_on,omitempty"`
+}
+
+type ServiceClientResponse struct {
+	ID         string `json:"id" bson:"_id,omitempty"`
+	ClientName string `json:"client_name" bson:"client_name"`
+}
+
 type Clients struct {
-	ClientID   primitive.ObjectID `json:"client_id" bson:"_id"`
-	// ClientName string             `json:"client_name" bson:"client_name"`
+	ClientID primitive.ObjectID `json:"client_id" bson:"_id"`
 }
 
 // func GetServices returns all registered services from db
 func GetServices(w http.ResponseWriter, r *http.Request) {
-	services := []ServiceBase{}
-	// Find all services in the collection
-	cursor, err := servicesCollection.Find(context.TODO(), bson.M{})
+	services := []ServiceResponse{}
+
+	// aggregate the services with the clients collection to get the client name and id for each service using mongodb $lookup and $project
+	pipeline := []bson.M{
+		{
+			"$lookup": bson.M{
+				"from":         "clients",
+				"localField":   "attached_to_client._id",
+				"foreignField": "_id",
+				"as":           "client",
+			},
+		},
+		{
+			"$project": bson.M{
+				"_id":                 1,
+				"service_name":        1,
+				"service_type":        1,
+				"service_owner":       1,
+				"service_description": 1,
+				"service_status":      1,
+				"invoice_frequency":   1,
+				"invoice_amount":      1,
+				"management_fee":      1,
+				"created_on":          1,
+				"modified_on":         1,
+				"client._id":          1,
+				"client.client_name":  1,
+			},
+		},
+	}
+
+	// execute the pipeline
+	cursor, err := servicesCollection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
-		response := "Failed to find services: "
+		response := "Failed to get services"
+		log.Error(response + err.Error())
 		log.Error(response + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		w.Write([]byte(response))
 		return
 	}
-	// iterate through the cursor and add each service to the services array
+
+	// iterate through the cursor and add the results to the services slice
 	for cursor.Next(context.TODO()) {
-		var service ServiceBase
-		err := cursor.Decode(&service)
-		if err != nil {
-			response := "Failed to decode service: "
-			log.Error(response + err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
-		services = append(services, service)
+		var result ServiceResponse
+		cursor.Decode(&result)
+		services = append(services, result)
 	}
 
-	// count and return the number of services
+	// Count documents in array and return x-total-count header
 	w.Header().Add("X-Total-Count", (strconv.Itoa(len(services))))
 
-	// return the services array
+	// Return the slice
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(services)
+
 }
 
 // func GetServiceById returns a single service from db
 func GetServiceById(w http.ResponseWriter, r *http.Request) {
-	var service ServiceBase
+	var service ServiceResponse
 	// get the id from the url
 	id, _ := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
 
-	// find the service in the collection
-	err := servicesCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&service)
+	// aggregate the services collection with the clients collection to get the client name and client id for each contact
+	// using $lookup and $project
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{"_id": id},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "clients",
+				"localField":   "attached_to_client._id",
+				"foreignField": "_id",
+				"as":           "client",
+			},
+		},
+		{
+			"$project": bson.M{
+				"_id":                 1,
+				"service_name":        1,
+				"service_type":        1,
+				"service_owner":       1,
+				"service_description": 1,
+				"service_status":      1,
+				"invoice_frequency":   1,
+				"invoice_amount":      1,
+				"management_fee":      1,
+				"created_on":          1,
+				"modified_on":         1,
+				"client._id":          1,
+				"client.client_name":  1,
+			},
+		},
+	}
+
+	// execute the pipeline
+	cursor, err := servicesCollection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
-		response := "Failed to find service: " + id.Hex()
+		response := "Failed to get service"
 		log.Error(response + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		w.Write([]byte(response))
 		return
 	}
 
-	// return the service
+	// make sure cursor is not empty
+	if !cursor.Next(context.TODO()) {
+		response := "Service not found"
+		log.Error(response)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(response))
+		return
+	}
+
+	// Decode the document into the client struct
+	err = cursor.Decode(&service)
+	if err != nil {
+		log.Error("failed to decode cursor", err.Error())
+		return
+	}
+
+	// Return the service
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(service)
 }
@@ -261,78 +355,4 @@ func DeleteService(w http.ResponseWriter, r *http.Request) {
 	log.Info(response)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
-}
-
-// func AddServiceToClient adds the client_name and client_id to ServiceBase.AttachedtoClient
-func AddServiceToClient(w http.ResponseWriter, r *http.Request) {
-	var service ServiceBase
-	// get the id from the url
-	id, _ := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
-
-	// find the service in the collection to verify it exists
-	err := servicesCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&service)
-	idString := id.Hex()
-	if err != nil {
-		response := "Failed to find service: " + idString
-		log.Error(response + err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// get the client_name and client_id from the request body
-	var client Clients
-	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
-		response := "Invalid request payload: " + err.Error()
-		log.Error(response)
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// retrieve the client from the clients collection based on the client_id
-	err = clientsCollection.FindOne(context.TODO(), bson.M{"_id": client.ClientID}).Decode(&client)
-	if err != nil {
-		response := "Failed to find client: " + client.ClientID.Hex()
-		log.Error(response + err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// append the client_name and client_id to the service
-	service.AttachedToClient = append(service.AttachedToClient, client)
-
-	// bump the timestamp
-	service.ModifiedOn = time.Now()
-
-	// update the service in the collection
-	result, err := servicesCollection.UpdateOne(context.TODO(), bson.M{"_id": id}, bson.M{"$set": service})
-
-	if err != nil {
-		response := "Failed to update service: " + idString
-		log.Error(response + err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	log.Info("Service updated with attached client. id: ", idString)
-
-	// retreive the updated service
-	var updatedService ServiceBase
-	if result.MatchedCount == 1 {
-		err := servicesCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&updatedService)
-		if err != nil {
-			response := "Failed to retrieve updated service"
-			log.Error(response, err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(updatedService)
-
 }

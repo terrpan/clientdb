@@ -1,0 +1,102 @@
+[
+  {
+    "service_name": "Redhold",
+    "service_type": "br.com.uol.Lotstring",
+    "service_owner": "Emmit Gearty",
+    "service_description": "Dilation of Bladder Neck, Open Approach",
+    "service_status": "Tools",
+    "invoice_frequency": "Yearly",
+    "Invoice_amount": 256,
+    "management_fee": 90
+  },
+  {
+    "service_name": "Duobam",
+    "service_type": "com.ask.Subin",
+    "service_owner": "Conan Lewsam",
+    "service_description": "Destruction of Bilateral Seminal Vesicles, Open Approach",
+    "service_status": "Jewelry",
+    "invoice_frequency": "Monthly",
+    "Invoice_amount": 598,
+    "management_fee": 81
+  },
+  {
+    "service_name": "Cardguard",
+    "service_type": "com.studiopress.Latlux",
+    "service_owner": "Laverna Spender",
+    "service_description": "Destruction of Ileocecal Valve, Perc Endo Approach",
+    "service_status": "Sports",
+    "invoice_frequency": "Daily",
+    "Invoice_amount": 417,
+    "management_fee": 53
+  },
+  {
+    "service_name": "Treeflex",
+    "service_type": "com.godaddy.Sub-Ex",
+    "service_owner": "Seymour Jenyns",
+    "service_description": "Restrict Sigmoid Colon w Extralum Dev, Perc Endo",
+    "service_status": "Sports",
+    "invoice_frequency": "Weekly",
+    "Invoice_amount": 196,
+    "management_fee": 61
+  },
+  {
+    "service_name": "Treeflex",
+    "service_type": "us.imageshack.Wrapsafe",
+    "service_owner": "Corene Lipscombe",
+    "service_description": "Release Left Innominate Vein, Percutaneous Approach",
+    "service_status": "Jewelry",
+    "invoice_frequency": "Seldom",
+    "Invoice_amount": 716,
+    "management_fee": 93
+  },
+  {
+    "service_name": "Tempsoft",
+    "service_type": "com.dropbox.Kanlam",
+    "service_owner": "Hewett Heatly",
+    "service_description": "Insertion of Ext Fix into Skull, Perc Approach",
+    "service_status": "Jewelry",
+    "invoice_frequency": "Daily",
+    "Invoice_amount": 287,
+    "management_fee": 34
+  },
+  {
+    "service_name": "Redhold",
+    "service_type": "com.surveymonkey.Sonsing",
+    "service_owner": "Donall Bontine",
+    "service_description": "Extirpation of Matter from L Verteb Art, Open Approach",
+    "service_status": "Kids",
+    "invoice_frequency": "Daily",
+    "Invoice_amount": 927,
+    "management_fee": 60
+  },
+  {
+    "service_name": "Aerified",
+    "service_type": "cn.com.sina.Trippledex",
+    "service_owner": "Heath Peddel",
+    "service_description": "Dilation of Left Hand Artery with 3 Drug-elut, Perc Approach",
+    "service_status": "Jewelry",
+    "invoice_frequency": "Weekly",
+    "Invoice_amount": 839,
+    "management_fee": 56
+  },
+  {
+    "service_name": "Viva",
+    "service_type": "edu.princeton.Aerified",
+    "service_owner": "Karie Titford",
+    "service_description": "Bypass R Com Iliac Art to B Ext Ilia w Autol Vn, Perc Endo",
+    "service_status": "Games",
+    "invoice_frequency": "Seldom",
+    "Invoice_amount": 76,
+    "management_fee": 95
+  },
+  {
+    "service_name": "Flowdesk",
+    "service_type": "edu.stanford.Pannier",
+    "service_owner": "Stan Wallenger",
+    "service_description": "Plaque Radiation of Maxilla",
+    "service_status": "Toys",
+    "invoice_frequency": "Monthly",
+    "Invoice_amount": 592,
+    "management_fee": 72
+  }
+]

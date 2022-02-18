@@ -120,7 +120,7 @@ func GetClients(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// iterate through the cursor and add each client to the clients array
+	// iterate through the cursor and add each client to the clients slice
 	for cursor.Next(context.TODO()) {
 		var client ClientResponse
 		// decode the document into the client struct
@@ -141,7 +141,7 @@ func GetClientbyId(w http.ResponseWriter, r *http.Request) {
 	var client ClientResponse
 	id, _ := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
 
-	// aggregate the client and it's services and contacts using client_id, and use $project to get the required fields
+	// aggregate the client and the services and contacts using _id, and use $project to get the required fields
 	pipeline := []bson.M{
 		{
 			"$match": bson.M{"_id": id},
@@ -197,9 +197,9 @@ func GetClientbyId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// count lenth of the cursor and return 404 if no client is found
+	// count length of the cursor and return 404 if no client is found
 	if !cursor.Next(context.TODO()) {
-		response := "No client not found with id: " + id.Hex()
+		response := "No client found with id: " + id.Hex()
 		log.Error(response)
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(response)
