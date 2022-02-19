@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  clientdb:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    environment:
+      - CLIENTDB_MONGODB_HOST=mongodb
+      -
+
+  mongodb:
+    image: mongo:5
