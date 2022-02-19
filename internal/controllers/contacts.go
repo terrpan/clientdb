@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/terrpan/clientdb/internal/dbclient"
+	"github.com/terrpan/clientdb/internal/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -47,7 +47,7 @@ type ContactClientResponse struct {
 }
 
 var (
-	contactsCollection *mongo.Collection = dbclient.GetCollection(dbclient.DB, "contacts")
+	contactsCollection *mongo.Collection = util.GetCollection(util.DB, "contacts")
 )
 
 // getContacts returns all contacts

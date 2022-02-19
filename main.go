@@ -3,20 +3,38 @@ package main
 import (
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"github.com/terrpan/clientdb/internal/controllers"
-	"github.com/terrpan/clientdb/internal/dbclient"
+	"github.com/terrpan/clientdb/internal/util"
 )
 
 func init() {
+
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
 	})
-	// log.SetReportCaller(true)
+
+	log.SetOutput(os.Stdout)
+
+	// set log level depending on env
+	switch strings.ToLower(util.LogLevel) {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+		log.SetReportCaller(true)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	}
+
+	log.Info("Log level set to: ", log.GetLevel().String())
 }
 
 // func Homehandler is dummy func for returning "I'm alive"
@@ -34,7 +52,7 @@ func commonMiddleware(next http.Handler) http.Handler {
 
 func logger(next http.Handler) http.Handler {
 	//TODO: change to debug level
-	if os.Getenv("ENV") == "dev" {
+	if log.GetLevel().String() == "debug" {
 		return handlers.CombinedLoggingHandler(os.Stdout, next)
 	}
 	return next
@@ -42,8 +60,8 @@ func logger(next http.Handler) http.Handler {
 
 func main() {
 
-	dbclient.DbConnect()
-
+	util.DbConnect()
+	//print all os.envs
 	r := mux.NewRouter()
 
 	r.Use(commonMiddleware, logger)

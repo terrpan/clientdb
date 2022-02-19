@@ -10,19 +10,19 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/terrpan/clientdb/internal/dbclient"
+	"github.com/terrpan/clientdb/internal/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ClientBase struct {
-	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ClientName     string             `json:"client_name" bson:"client_name" validate:"required"`
-	SlackChannel   string             `json:"slack_channel,omitempty" bson:"slack_channel,omitempty"`
-	WebUrl         string             `json:"web_url,omitempty" bson:"web_url,omitempty"`
-	CreatedOn      time.Time          `json:"created_on,omitempty" bson:"created_on,omitempty"`
-	ModifiedOn     time.Time          `json:"modified_on,omitempty" bson:"modified_on,omitempty"`
+	ID           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ClientName   string             `json:"client_name" bson:"client_name" validate:"required"`
+	SlackChannel string             `json:"slack_channel,omitempty" bson:"slack_channel,omitempty"`
+	WebUrl       string             `json:"web_url,omitempty" bson:"web_url,omitempty"`
+	CreatedOn    time.Time          `json:"created_on,omitempty" bson:"created_on,omitempty"`
+	ModifiedOn   time.Time          `json:"modified_on,omitempty" bson:"modified_on,omitempty"`
 }
 
 type ClientResponse struct {
@@ -58,7 +58,7 @@ type ClientsContactResponse struct {
 
 var (
 	validate                            = *validator.New()
-	clientsCollection *mongo.Collection = dbclient.GetCollection(dbclient.DB, "clients")
+	clientsCollection *mongo.Collection = util.GetCollection(util.DB, "clients")
 )
 
 // getClient returns all clients

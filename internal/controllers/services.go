@@ -9,14 +9,14 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/terrpan/clientdb/internal/dbclient"
+	"github.com/terrpan/clientdb/internal/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
-	servicesCollection *mongo.Collection = dbclient.GetCollection(dbclient.DB, "services")
+	servicesCollection *mongo.Collection = util.GetCollection(util.DB, "services")
 )
 
 type ServiceBase struct {
