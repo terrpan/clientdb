@@ -1,27 +1,16 @@
-package dbclient
+package util
 
 import (
-	"context"
-
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var (
-	// DB variable to hold the database connection
-	addr string        = "localhost"
-	port string        = "27017"
-	db   string        = "test"
-	ctx                = context.TODO()
-	DB   *mongo.Client = DbConnect()
-)
-
 // DBConnect is a function to connect to the database
 func DbConnect() *mongo.Client {
 
-	connectionString := "mongodb://" + addr + ":" + port + "/" + db
-
+	connectionString := "mongodb://" + MongoDBHost + ":" + MongoDBPort + "/" + MongoDBName
+	log.Debug("Using connection string: ", connectionString)
 	// Set client options
 	mongoOptions := options.Client().ApplyURI(connectionString)
 
@@ -43,6 +32,6 @@ func DbConnect() *mongo.Client {
 }
 
 func GetCollection(client *mongo.Client, collectionName string) *mongo.Collection {
-	collection := client.Database(db).Collection(collectionName)
+	collection := client.Database(MongoDBName).Collection(collectionName)
 	return collection
 }
