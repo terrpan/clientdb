@@ -12,11 +12,10 @@ const (
 )
 
 var (
-	// config, _               = LoadConfig()
 	MongoDBHost               = GetEnv(VarPrefix+"MONGODB_HOST", "localhost")
 	MongoDBPort               = GetEnv(VarPrefix+"MONGODB_PORT", "27017")
 	MongoDBName               = GetEnv(VarPrefix+"MONGODB_NAME", "test")
-	LogLevel									= GetEnv(VarPrefix+"LOG_LEVEL", "info")
+	LogLevel                  = GetEnv(VarPrefix+"LOG_LEVEL", "info")
 	ctx                       = context.TODO()
 	DB          *mongo.Client = DbConnect()
 )
