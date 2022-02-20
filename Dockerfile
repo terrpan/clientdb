@@ -11,7 +11,7 @@ FROM scratch
 WORKDIR /app
 COPY --from=builder /build/ .
 
-EXPOSE 9000
+EXPOSE 8080
 
 # executable
 ENTRYPOINT [ "./clientdb" ]

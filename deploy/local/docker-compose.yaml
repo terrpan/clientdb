@@ -7,7 +7,17 @@ services:
       dockerfile: Dockerfile
     environment:
       - CLIENTDB_MONGODB_HOST=mongodb
-      -
-
+      - CLIENTDB_MONGODB_PORT=27017
+      - CLIENTDB_MONGODB_DATABASE=clientdb
+      - CLIENTDB_LOG_LEVEL=debug
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+      
   mongodb:
     image: mongo:5
+    ports:
+      - "27018:27017"
+    volumes:
+      - ./configs/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
