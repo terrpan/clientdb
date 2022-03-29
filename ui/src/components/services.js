@@ -20,6 +20,10 @@ import {
   NumberInput,
   TabbedForm,
   FormTab,
+  Create,
+  useNotify,
+  useRedirect,
+  useRefresh,
 } from 'react-admin';
 
 
@@ -89,3 +93,35 @@ export const serviceEdit = props => (
     </SimpleForm>
   </Edit>
 );
+
+export const ServiceCreate = props => {
+  const notify = useNotify();
+  const redirect = useRedirect();
+  const refresh = useRefresh();
+
+  const onSuccess = () => {
+    notify('Service Created successfully');
+    redirect('/services');
+    refresh();
+  };
+
+  return (
+    <Create onSuccess={onSuccess} {...props}>
+      <SimpleForm>
+        <TextInput source="service_name" />
+        <TextInput source="service_type" />
+        <TextInput source="service_owner" />
+        <TextInput source="service_description" />
+        <ReferenceArrayInput source="attached_to_client" reference="clients" label="Client" allowEmpty>
+          <ArrayInput>
+          <SimpleFormIterator>
+            <ReferenceInput source="client_id" reference="clients" label="Client" >
+              <SelectInput optionText="client_name"/>
+            </ReferenceInput>
+          </SimpleFormIterator>
+          </ArrayInput>
+        </ReferenceArrayInput>
+        </SimpleForm>
+    </Create>
+  );
+}
